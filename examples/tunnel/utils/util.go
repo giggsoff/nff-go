@@ -44,7 +44,7 @@ func arpHandler(pkt *packet.Packet, ctx flow.UserContext) bool {
 		pkt.ParseL3()
 
 		// Fill up L2
-		pkt.Ether.SAddr = LBConfig.TunnelPort.macAddress
+		pkt.Ether.SAddr = LBConfig.InputPort.macAddress
 		pkt.Ether.DAddr = workerMAC
 		pkt.Ether.EtherType = types.SwapIPV4Number
 		gre := pkt.GetGREForIPv4()

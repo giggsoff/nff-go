@@ -54,7 +54,7 @@ func InitFlows() {
 	flow.CheckFatal(flow.SetSender(ioFlow, LBConfig.TunnelPort.Index))
 	ioFlow, err = flow.SetReceiver(LBConfig.TunnelPort.Index)
 	flow.CheckFatal(flow.SetHandlerDrop(ioFlow, arpHandler, nil))
-	flow.CheckFatal(flow.SetStopper(ioFlow))
+	flow.CheckFatal(flow.SetSender(ioFlow, LBConfig.InputPort.Index))
 
 	LBConfig.InputPort.initPort()
 	LBConfig.TunnelPort.initPort()
