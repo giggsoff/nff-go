@@ -57,11 +57,11 @@ func InitFlows() {
 	flow.CheckFatal(flow.SetHandlerDrop(ioFlow, decrypt, SContext{}))
 	flow.CheckFatal(flow.SetSender(ioFlow, LBConfig.InputPort.Index))
 
-	LBConfig.InputPort.initPort()
-	LBConfig.TunnelPort.initPort()
+	//LBConfig.InputPort.initPort()
+	//LBConfig.TunnelPort.initPort()
 }
 
-func (port *IpPort) initPort() {
+/*func (port *IpPort) initPort() {
 	port.macAddress = flow.GetPortMACAddress(port.Index)
 	port.neighCache = packet.NewNeighbourTable(port.Index, port.macAddress,
 		func(ipv4 types.IPv4Address) bool {
@@ -70,4 +70,4 @@ func (port *IpPort) initPort() {
 		func(ipv6 types.IPv6Address) bool {
 			return LBConfig.TunnelSubnet.IPv6.CheckIPv6AddressWithinSubnet(ipv6)
 		})
-}
+}*/
