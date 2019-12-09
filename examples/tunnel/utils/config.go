@@ -53,6 +53,7 @@ func InitFlows() {
 	flow.CheckFatal(flow.SetHandlerDrop(ioFlow, balancer, nil))
 	flow.CheckFatal(flow.SetSender(ioFlow, LBConfig.TunnelPort.Index))
 	ioFlow, err = flow.SetReceiver(LBConfig.TunnelPort.Index)
+	flow.CheckFatal(err)
 	flow.CheckFatal(flow.SetHandlerDrop(ioFlow, arpHandler, nil))
 	flow.CheckFatal(flow.SetSender(ioFlow, LBConfig.InputPort.Index))
 

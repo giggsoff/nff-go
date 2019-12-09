@@ -54,5 +54,5 @@ func arpHandler(pkt *packet.Packet, ctx flow.UserContext) bool {
 		return true
 
 	}
-	return true
+	return false
 }
