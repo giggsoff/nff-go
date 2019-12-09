@@ -6,6 +6,8 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"hash"
+	"log"
+	"os"
 )
 
 type SContext struct {
@@ -21,8 +23,12 @@ type SetIVer interface {
 func InitSContext() interface{} {
 	var auth123Key = []byte("qqqqqqqqqqqqqqqqqqqq")
 	var crypt123Key = []byte("AES128Key-16Char")
-	block123, _ := aes.NewCipher(crypt123Key)
+	block123, err := aes.NewCipher(crypt123Key)
 
+	if err != nil {
+		log.Fatal(err)
+		os.Exit(1)
+	}
 	tempScalarIV := make([]byte, 16)
 
 	n := new(SContext)
