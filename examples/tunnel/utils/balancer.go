@@ -56,6 +56,7 @@ func encrypt(currentPacket *packet.Packet, context0 flow.UserContext) bool {
 	currentESPTail.nextIP = types.IPNumber
 	// Encryption
 	EncryptionPart := (*[types.MaxLength]byte)(currentPacket.StartAtOffset(0))[etherLen+outerIPLen+cryptoHeadLen : newLength-authLen]
+	fmt.Println("Input", EncryptionPart)
 	context.modeEnc.(SetIVer).SetIV(currentCryptoHeader.IV[:])
 	context.modeEnc.CryptBlocks(EncryptionPart, EncryptionPart)
 
@@ -86,6 +87,7 @@ func decrypt(currentPacket *packet.Packet, context flow.UserContext) bool {
 	authPart := (*[types.MaxLength]byte)(unsafe.Pointer(currentPacket.StartAtOffset(0)))[etherLen+outerIPLen : length-authLen]
 	if decapsulationSPI123(authPart, currentESPTail.Auth, currentESPHeader.IV, encryptionPart, context) == false {
 		fmt.Println("Decapsulate error")
+		fmt.Println("Result", encryptionPart)
 		return false
 	}
 	// Decapsulate
