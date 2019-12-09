@@ -64,9 +64,9 @@ func (port *IpPort) initPort() {
 	port.macAddress = flow.GetPortMACAddress(port.Index)
 	port.neighCache = packet.NewNeighbourTable(port.Index, port.macAddress,
 		func(ipv4 types.IPv4Address) bool {
-			return ipv4 == LBConfig.TunnelSubnet.IPv4.Addr
+			return LBConfig.TunnelSubnet.IPv4.CheckIPv4AddressWithinSubnet(ipv4)
 		},
 		func(ipv6 types.IPv6Address) bool {
-			return ipv6 == LBConfig.TunnelSubnet.IPv6.Addr
+			return LBConfig.TunnelSubnet.IPv6.CheckIPv6AddressWithinSubnet(ipv6)
 		})
 }
