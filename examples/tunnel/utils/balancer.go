@@ -87,9 +87,9 @@ func decrypt(currentPacket *packet.Packet, context flow.UserContext) bool {
 	authPart := (*[types.MaxLength]byte)(unsafe.Pointer(currentPacket.StartAtOffset(0)))[etherLen+outerIPLen : length-authLen]
 	if decapsulationSPI123(authPart, currentESPTail.Auth, currentESPHeader.IV, encryptionPart, context) == false {
 		fmt.Println("Decapsulate error")
-		fmt.Println("Result", encryptionPart)
 		return false
 	}
+	fmt.Println("Result", encryptionPart)
 	// Decapsulate
 	currentPacket.DecapsulateHead(etherLen, outerIPLen+cryptoHeadLen)
 	currentPacket.DecapsulateTail(length-cryptoTailLen-uint(currentESPTail.paddingLen), uint(currentESPTail.paddingLen)+cryptoTailLen)
