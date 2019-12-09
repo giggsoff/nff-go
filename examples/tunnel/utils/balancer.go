@@ -13,6 +13,7 @@ import (
 	"unsafe"
 )
 
+const mode1234 = 1234
 const cryptoHeadLen = 36
 const etherLen = types.EtherLen
 const outerIPLen = types.IPv4MinLen
@@ -67,6 +68,9 @@ func encrypt(currentPacket *packet.Packet, context0 flow.UserContext) bool {
 
 func decrypt(currentPacket *packet.Packet, context flow.UserContext) bool {
 	length := currentPacket.GetPacketLen()
+	if length-authLen < etherLen+outerIPLen+cryptoHeadLen || length-authLen < etherLen+outerIPLen {
+		return false
+	}
 	currentESPHeader := (*cryptHeader)(currentPacket.StartAtOffset(etherLen + outerIPLen))
 	currentESPTail := (*cryptoTail)(unsafe.Pointer(currentPacket.StartAtOffset(uintptr(length) - cryptoTailLen)))
 	// Security Association
