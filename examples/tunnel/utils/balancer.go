@@ -89,7 +89,7 @@ func decrypt(currentPacket *packet.Packet, context flow.UserContext) bool {
 		return false
 	}
 	// Decapsulate
-	currentPacket.DecapsulateHead(etherLen, outerIPLen+cryptoTailLen)
+	currentPacket.DecapsulateHead(etherLen, outerIPLen+cryptoHeadLen)
 	currentPacket.DecapsulateTail(length-cryptoTailLen-uint(currentESPTail.paddingLen), uint(currentESPTail.paddingLen)+cryptoTailLen)
 	return true
 }
