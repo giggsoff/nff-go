@@ -69,12 +69,16 @@ func encrypt(currentPacket *packet.Packet, context0 flow.UserContext) bool {
 
 func decrypt(currentPacket *packet.Packet, context flow.UserContext) bool {
 	length := currentPacket.GetPacketLen()
+	currentESPHeader := (*cryptHeader)(currentPacket.StartAtOffset(etherLen + outerIPLen))
+	currentESPTail := (*cryptoTail)(unsafe.Pointer(currentPacket.StartAtOffset(uintptr(length) - cryptoTailLen)))
+	if currentESPHeader.KEY != currentESPHeader.IV {
+		fmt.Println("currentESPHeader check error")
+		return false
+	}
 	if length-authLen < etherLen+outerIPLen+cryptoHeadLen || length-authLen < etherLen+outerIPLen {
 		fmt.Println("Length check error", length)
 		return false
 	}
-	currentESPHeader := (*cryptHeader)(currentPacket.StartAtOffset(etherLen + outerIPLen))
-	currentESPTail := (*cryptoTail)(unsafe.Pointer(currentPacket.StartAtOffset(uintptr(length) - cryptoTailLen)))
 	// Security Association
 	encryptionPart := (*[types.MaxLength]byte)(unsafe.Pointer(currentPacket.StartAtOffset(0)))[etherLen+outerIPLen+cryptoHeadLen : length-authLen]
 	authPart := (*[types.MaxLength]byte)(unsafe.Pointer(currentPacket.StartAtOffset(0)))[etherLen+outerIPLen : length-authLen]
