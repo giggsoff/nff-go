@@ -1,0 +1,4 @@
+<network ipv6='yes'>
+    <name>DPDK_2</name>
+    <bridge name='dpdkbr2' stp='off' delay='0'/>
+</network>

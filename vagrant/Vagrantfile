@@ -142,7 +142,7 @@ sudo sh -c "echo /usr/lib64 > /etc/ld.so.conf.d/usrlib64.conf"
 
 echo Downloading and building NFF-GO framework
 go get -v golang.org/x/tools/cmd/stringer
-git clone -b master --recurse-submodules http://github.com/intel-go/nff-go
+git clone -b master --recurse-submodules http://github.com/giggsoff/nff-go
 (cd nff-go; go mod download; make)
 echo Downloading and building NFF-GO NAT example and its dependencies
 go get github.com/golang/protobuf/protoc-gen-go

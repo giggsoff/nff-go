@@ -1,0 +1,1 @@
+VM_GROUP_SIZE=2 VM_LINKS_NUMBER=2 VM_TOTAL_NUMBER=2 vagrant up --provider=libvirt
