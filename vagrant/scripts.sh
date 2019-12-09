@@ -1,7 +1,7 @@
 export GOROOT=/opt/go
 export NFF_GO="$HOME"/nff-go
 export PATH="$HOME"/go/bin:"$GOROOT"/bin:"$PATH"
-export MAKEFLAGS="-j 4"
+export MAKEFLAGS="-j 2"
 export NFF_GO_CARDS="00:06.0 00:07.0"
 export DISTRO=$(lsb_release -i | cut -d: -f2 | sed s/'^\t'//)
 export CARD1=ens6

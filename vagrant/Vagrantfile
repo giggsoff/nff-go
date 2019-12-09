@@ -33,7 +33,7 @@ Vagrant.configure(2) do |config|
   config.vm.provider "libvirt" do |lv|
     lv.driver = "kvm"
     lv.memory = "4096"
-    lv.cpus = 16
+    lv.cpus = 8
     lv.storage_pool_name = "images"
   end
 
@@ -41,6 +41,7 @@ Vagrant.configure(2) do |config|
     vb.gui = false
     vb.memory = "4096"
     vb.cpus = 8
+    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
     (1..vm_links_number * 2).each do |j|
       vb.customize ["modifyvm", :id, "--nicpromisc#{j + 1}", "allow-all"]
     end
@@ -148,6 +149,8 @@ go get github.com/golang/protobuf/protoc-gen-go
 git clone -b master --recurse-submodules http://github.com/intel-go/nff-go-nat
 (cd nff-go-nat; go mod download; . env.sh; make)
 ./nff-go-nat/test/httpperfserv/install-systemd-service.sh "-port 8008"
+
+ln -s /home/vagrant/nff-go/dpdk/dpdk/build /home/vagrant/nff-go/dpdk/dpdk/x86_64-native-linuxapp-gcc
 
 echo Setting up 1024 huge pages
 sudo sh -c 'echo 1024 > /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages'
