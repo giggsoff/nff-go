@@ -7,6 +7,7 @@ package tunnel
 import (
 	"bytes"
 	"crypto/aes"
+	"fmt"
 	"github.com/intel-go/nff-go/flow"
 	"github.com/intel-go/nff-go/packet"
 	"github.com/intel-go/nff-go/types"
@@ -69,6 +70,7 @@ func encrypt(currentPacket *packet.Packet, context0 flow.UserContext) bool {
 func decrypt(currentPacket *packet.Packet, context flow.UserContext) bool {
 	length := currentPacket.GetPacketLen()
 	if length-authLen < etherLen+outerIPLen+cryptoHeadLen || length-authLen < etherLen+outerIPLen {
+		fmt.Println("Length check error", length)
 		return false
 	}
 	currentESPHeader := (*cryptHeader)(currentPacket.StartAtOffset(etherLen + outerIPLen))
