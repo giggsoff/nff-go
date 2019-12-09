@@ -50,11 +50,11 @@ func ReadConfig(fileName string) error {
 func InitFlows() {
 	ioFlow, err := flow.SetReceiver(LBConfig.InputPort.Index)
 	flow.CheckFatal(err)
-	flow.CheckFatal(flow.SetHandlerDrop(ioFlow, balancer, SContext{}))
+	flow.CheckFatal(flow.SetHandlerDrop(ioFlow, encrypt, SContext{}))
 	flow.CheckFatal(flow.SetSender(ioFlow, LBConfig.TunnelPort.Index))
 	ioFlow, err = flow.SetReceiver(LBConfig.TunnelPort.Index)
 	flow.CheckFatal(err)
-	flow.CheckFatal(flow.SetHandlerDrop(ioFlow, arpHandler, nil))
+	flow.CheckFatal(flow.SetHandlerDrop(ioFlow, decrypt, SContext{}))
 	flow.CheckFatal(flow.SetSender(ioFlow, LBConfig.InputPort.Index))
 
 	LBConfig.InputPort.initPort()

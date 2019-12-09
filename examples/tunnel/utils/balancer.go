@@ -5,6 +5,8 @@
 package tunnel
 
 import (
+	"bytes"
+	"crypto/aes"
 	"github.com/intel-go/nff-go/flow"
 	"github.com/intel-go/nff-go/packet"
 	"github.com/intel-go/nff-go/types"
@@ -23,26 +25,25 @@ type cryptHeader struct {
 	KEY [16]byte
 }
 
-type espTail struct {
+type cryptoTail struct {
 	paddingLen uint8
 	nextIP     uint8
 	Auth       [authLen]byte
 }
 
-func balancer(currentPacket *packet.Packet, context0 flow.UserContext) bool {
+func encrypt(currentPacket *packet.Packet, context0 flow.UserContext) bool {
 	currentPacket.EncapsulateHead(etherLen, outerIPLen+cryptoHeadLen)
 	context := (context0).(*SContext)
 	length := currentPacket.GetPacketLen()
 	paddingLength := uint8((16 - (length-(etherLen+outerIPLen+cryptoHeadLen)-cryptoTailLen)%16) % 16)
 	newLength := length + uint(paddingLength) + cryptoTailLen
-	currentPacket.GetIPv4NoCheck().TotalLength = packet.SwapBytesUint16(uint16(newLength) - etherLen)
 	currentPacket.EncapsulateTail(length, uint(paddingLength)+cryptoTailLen)
 
 	currentCryptoHeader := (*cryptHeader)(currentPacket.StartAtOffset(etherLen + outerIPLen))
 	currentCryptoHeader.KEY = [16]byte{0x90, 0x9d, 0x78, 0xa8, 0x72, 0x70, 0x68, 0x00, 0x8f, 0xdc, 0x55, 0x73, 0xa3, 0x75, 0xb5, 0xa7}
 	currentCryptoHeader.IV = [16]byte{0x90, 0x9d, 0x78, 0xa8, 0x72, 0x70, 0x68, 0x00, 0x8f, 0xdc, 0x55, 0x73, 0xa3, 0x75, 0xb5, 0xa7}
 
-	currentESPTail := (*espTail)(currentPacket.StartAtOffset(uintptr(newLength) - cryptoTailLen))
+	currentESPTail := (*cryptoTail)(currentPacket.StartAtOffset(uintptr(newLength) - cryptoTailLen))
 	if paddingLength > 0 {
 		*(*uint64)(unsafe.Pointer(uintptr(unsafe.Pointer(currentESPTail)) - uintptr(paddingLength))) = 578437695752307201
 		if paddingLength > 8 {
@@ -61,5 +62,39 @@ func balancer(currentPacket *packet.Packet, context0 flow.UserContext) bool {
 	AuthPart := (*[types.MaxLength]byte)(currentPacket.StartAtOffset(0))[etherLen+outerIPLen : newLength-authLen]
 	context.mac123.Write(AuthPart)
 	copy(currentESPTail.Auth[:], context.mac123.Sum(nil))
+	return true
+}
+
+func decrypt(currentPacket *packet.Packet, context flow.UserContext) bool {
+	length := currentPacket.GetPacketLen()
+	currentESPHeader := (*cryptHeader)(currentPacket.StartAtOffset(etherLen + outerIPLen))
+	currentESPTail := (*cryptoTail)(unsafe.Pointer(currentPacket.StartAtOffset(uintptr(length) - cryptoTailLen)))
+	// Security Association
+	encryptionPart := (*[types.MaxLength]byte)(unsafe.Pointer(currentPacket.StartAtOffset(0)))[etherLen+outerIPLen+cryptoHeadLen : length-authLen]
+	authPart := (*[types.MaxLength]byte)(unsafe.Pointer(currentPacket.StartAtOffset(0)))[etherLen+outerIPLen : length-authLen]
+	if decapsulationSPI123(authPart, currentESPTail.Auth, currentESPHeader.IV, encryptionPart, context) == false {
+		return false
+	}
+	// Decapsulate
+	currentPacket.DecapsulateHead(etherLen, outerIPLen+cryptoTailLen)
+	currentPacket.DecapsulateTail(length-cryptoTailLen-uint(currentESPTail.paddingLen), uint(currentESPTail.paddingLen)+cryptoTailLen)
+	return true
+}
+
+func decapsulationSPI123(currentAuth []byte, Auth [authLen]byte, iv [16]byte, ciphertext []byte, context0 flow.UserContext) bool {
+	context := (context0).(*SContext)
+
+	context.mac123.Reset()
+	context.mac123.Write(currentAuth)
+	if bytes.Equal(context.mac123.Sum(nil)[0:12], Auth[:]) == false {
+		return false
+	}
+
+	// Decryption
+	if len(ciphertext) < aes.BlockSize || len(ciphertext)%aes.BlockSize != 0 {
+		return false
+	}
+	context.modeDec.(SetIVer).SetIV(iv[:])
+	context.modeDec.CryptBlocks(ciphertext, ciphertext)
 	return true
 }
