@@ -7,7 +7,6 @@ import (
 	"crypto/sha1"
 	"hash"
 	"log"
-	"os"
 )
 
 type SContext struct {
@@ -27,8 +26,8 @@ func InitSContext() interface{} {
 
 	if err != nil {
 		log.Fatal(err)
-		os.Exit(1)
 	}
+
 	tempScalarIV := make([]byte, 16)
 
 	n := new(SContext)
