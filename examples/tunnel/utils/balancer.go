@@ -73,6 +73,8 @@ func decrypt(currentPacket *packet.Packet, context flow.UserContext) bool {
 	currentESPTail := (*cryptoTail)(unsafe.Pointer(currentPacket.StartAtOffset(uintptr(length) - cryptoTailLen)))
 	if currentESPHeader.KEY != currentESPHeader.IV {
 		fmt.Println("currentESPHeader check error")
+		fmt.Println("currentESPHeader KEY", currentESPHeader.KEY)
+		fmt.Println("currentESPHeader IV", currentESPHeader.IV)
 		return false
 	}
 	if length-authLen < etherLen+outerIPLen+cryptoHeadLen || length-authLen < etherLen+outerIPLen {
@@ -83,6 +85,7 @@ func decrypt(currentPacket *packet.Packet, context flow.UserContext) bool {
 	encryptionPart := (*[types.MaxLength]byte)(unsafe.Pointer(currentPacket.StartAtOffset(0)))[etherLen+outerIPLen+cryptoHeadLen : length-authLen]
 	authPart := (*[types.MaxLength]byte)(unsafe.Pointer(currentPacket.StartAtOffset(0)))[etherLen+outerIPLen : length-authLen]
 	if decapsulationSPI123(authPart, currentESPTail.Auth, currentESPHeader.IV, encryptionPart, context) == false {
+		fmt.Println("Decapsulate error")
 		return false
 	}
 	// Decapsulate
