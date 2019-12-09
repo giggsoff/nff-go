@@ -1,0 +1,12 @@
+{
+    "input-port": {
+        "index": 0
+    },
+    "tunnel-port": {
+        "index": 1
+    },
+    "tunnel-subnet": {
+        "ipv4": "192.168.18.0/24",
+        "ipv6": "fd18::/64"
+    }
+}

@@ -3,6 +3,7 @@
 # license that can be found in the LICENSE file.
 
 PATH_TO_MK = ../../mk
-SUBDIRS = main
+IMAGENAME = nff-go-example-tunnel
+EXECUTABLES = tunnel
 
-include $(PATH_TO_MK)/intermediate.mk
+include $(PATH_TO_MK)/leaf.mk
