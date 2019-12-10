@@ -113,7 +113,7 @@ SHELL
 $provision_ubuntu = <<SHELL
 echo Installing system packages
 sudo apt-get update
-sudo apt-get install -y python make gcc git libnuma-dev libpcap0.8-dev libelf-dev liblua5.3-dev network-manager protobuf-compiler libibverbs-dev ibverbs-utils rdma-core rdmacm-utils librdmacm-dev libmnl-dev
+sudo apt-get install -y python make gcc git libnuma-dev libpcap0.8-dev libelf-dev liblua5.3-dev network-manager protobuf-compiler libibverbs-dev ibverbs-utils rdma-core rdmacm-utils librdmacm-dev libmnl-dev libbpfcc-dev iperf3
 sudo systemctl enable network-manager
 sudo systemctl start network-manager
 

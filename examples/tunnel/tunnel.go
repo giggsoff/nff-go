@@ -10,6 +10,7 @@ func main() {
 	cores := flag.String("cores", "", "Specify CPU cores to use.")
 	configFile := flag.String("config", "config.json", "Specify config file name.")
 	noscheduler := flag.Bool("no-scheduler", false, "Disable scheduler.")
+	reassembly := flag.Bool("reassembly", true, "Enable Chain reassembly.")
 	dpdkLogLevel := flag.String("dpdk", "--log-level=0", "Passes an arbitrary argument to dpdk EAL.")
 	flag.Parse()
 
@@ -20,6 +21,7 @@ func main() {
 		CPUList:          *cores,
 		DPDKArgs:         []string{*dpdkLogLevel},
 		DisableScheduler: *noscheduler,
+		ChainedJumbo:     *reassembly,
 	}
 
 	flow.CheckFatal(flow.SystemInit(&nffgoconfig))

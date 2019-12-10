@@ -34,6 +34,8 @@ type cryptoTail struct {
 	Auth       [authLen]byte
 }
 
+const maxPacketSegment = 1484
+
 func encrypt(currentPacket *packet.Packet, context0 flow.UserContext) bool {
 	currentPacket.ParseL3()
 	dstMac, found := LBConfig.TunnelPort.neighCache.LookupMACForIPv4(LBConfig.TunnelPort.Subnet.IPv4.Addr)
@@ -41,6 +43,9 @@ func encrypt(currentPacket *packet.Packet, context0 flow.UserContext) bool {
 		fmt.Println("Not found MAC address for IP", LBConfig.TunnelPort.Subnet.IPv4.Addr.String())
 		LBConfig.TunnelPort.neighCache.SendARPRequestForIPv4(LBConfig.TunnelPort.Subnet.IPv4.Addr, LBConfig.InputPort.Subnet.IPv4.Addr, 0)
 		return false
+	}
+	if currentPacket.Next != nil {
+		fmt.Printf("encrypt BLOCK\n%x\nEND_BLOCK\n", currentPacket.Next.GetRawPacketBytes())
 	}
 	originalProtocol := currentPacket.Ether.EtherType
 	if originalProtocol == types.SwapARPNumber {
@@ -50,7 +55,7 @@ func encrypt(currentPacket *packet.Packet, context0 flow.UserContext) bool {
 		}
 		return false
 	}
-	fmt.Println(fmt.Sprintf("Encrypt packet input [% x]", currentPacket.GetRawPacketBytes()))
+	//fmt.Println(fmt.Sprintf("Encrypt packet input [% x]", currentPacket.GetRawPacketBytes()))
 	currentPacket.EncapsulateHead(etherLen, cryptoHeadLen+outerIPLen)
 	currentPacket.ParseL3()
 	currentPacket.Ether.DAddr = dstMac
@@ -65,14 +70,14 @@ func encrypt(currentPacket *packet.Packet, context0 flow.UserContext) bool {
 	length := currentPacket.GetPacketLen()
 	paddingLength := uint8((16 - (length-(etherLen+outerIPLen+cryptoHeadLen)-cryptoTailLen)%16) % 16)
 	newLength := length + uint(paddingLength) + cryptoTailLen
-	fmt.Println("L3", currentPacket.GetIPv4NoCheck())
+	//fmt.Println("L3", currentPacket.GetIPv4NoCheck())
 	currentPacket.GetIPv4NoCheck().TotalLength = packet.SwapBytesUint16(uint16(newLength) - etherLen)
 	currentPacket.EncapsulateTail(length, uint(paddingLength)+cryptoTailLen)
 
 	currentCryptoHeader := (*cryptHeader)(currentPacket.StartAtOffset(etherLen + outerIPLen))
 	currentCryptoHeader.SPI = packet.SwapBytesUint32(mode1234)
 	currentCryptoHeader.IV = [16]byte{0x90, 0x9d, 0x78, 0xa8, 0x72, 0x70, 0x68, 0x00, 0x8f, 0xdc, 0x55, 0x73, 0xa3, 0x75, 0xb5, 0xa7}
-	fmt.Println("currentESPHeader", currentCryptoHeader)
+	//fmt.Println("currentESPHeader", currentCryptoHeader)
 
 	currentESPTail := (*cryptoTail)(currentPacket.StartAtOffset(uintptr(newLength) - cryptoTailLen))
 	if paddingLength > 0 {
@@ -100,13 +105,13 @@ func encrypt(currentPacket *packet.Packet, context0 flow.UserContext) bool {
 	copy(currentESPTail.Auth[:], context.mac123.Sum(nil))
 	currentPacket.ParseL3()
 	ipv4.HdrChecksum = packet.SwapBytesUint16(packet.CalculateIPv4Checksum(currentPacket.GetIPv4NoCheck()))
-	fmt.Println("currentESPTail", currentESPTail)
-	fmt.Println(fmt.Sprintf("Encrypt packet result [% x]", currentPacket.GetRawPacketBytes()))
+	//fmt.Println("currentESPTail", currentESPTail)
+	//fmt.Println(fmt.Sprintf("Encrypt packet result [% x]", currentPacket.GetRawPacketBytes()))
 	return true
 }
 
 func decrypt(currentPacket *packet.Packet, context flow.UserContext) bool {
-	fmt.Println(fmt.Sprintf("Decrypt packet input [% x]", currentPacket.GetRawPacketBytes()))
+	//fmt.Println(fmt.Sprintf("Decrypt packet input [% x]", currentPacket.GetRawPacketBytes()))
 	currentPacket.ParseL3()
 	originalProtocol := currentPacket.Ether.EtherType
 	if originalProtocol == types.SwapARPNumber {
@@ -117,11 +122,14 @@ func decrypt(currentPacket *packet.Packet, context flow.UserContext) bool {
 		}
 		return false
 	}
+	if currentPacket.Next != nil {
+		fmt.Printf("decrypt BLOCK\n%x\nEND_BLOCK\n", currentPacket.Next.GetRawPacketBytes())
+	}
 	length := currentPacket.GetPacketLen()
 	currentESPHeader := (*cryptHeader)(currentPacket.StartAtOffset(etherLen + outerIPLen))
-	fmt.Println("currentESPHeader", currentESPHeader)
+	//fmt.Println("currentESPHeader", currentESPHeader)
 	currentESPTail := (*cryptoTail)(unsafe.Pointer(currentPacket.StartAtOffset(uintptr(length) - cryptoTailLen)))
-	fmt.Println("currentESPTail", currentESPTail)
+	//fmt.Println("currentESPTail", currentESPTail)
 	if length-authLen < etherLen+outerIPLen+cryptoHeadLen || length-authLen < etherLen+outerIPLen {
 		fmt.Println("Length check error", length)
 		return false
@@ -153,7 +161,7 @@ func decrypt(currentPacket *packet.Packet, context flow.UserContext) bool {
 		currentPacket.Ether.EtherType = types.SwapARPNumber
 	}
 	ipv4.HdrChecksum = packet.SwapBytesUint16(packet.CalculateIPv4Checksum(currentPacket.GetIPv4NoCheck()))
-	fmt.Println(fmt.Sprintf("Decrypt packet result [% x]", currentPacket.GetRawPacketBytes()))
+	//fmt.Println(fmt.Sprintf("Decrypt packet result [% x]", currentPacket.GetRawPacketBytes()))
 	return true
 }
 
