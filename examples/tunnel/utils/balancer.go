@@ -34,11 +34,13 @@ type cryptoTail struct {
 }
 
 func encrypt(currentPacket *packet.Packet, context0 flow.UserContext) bool {
+	fmt.Println("Encrypt packet input", currentPacket.GetRawPacketBytes())
 	currentPacket.EncapsulateHead(etherLen, outerIPLen+cryptoHeadLen)
 	context := (context0).(*SContext)
 	length := currentPacket.GetPacketLen()
 	paddingLength := uint8((16 - (length-(etherLen+outerIPLen+cryptoHeadLen)-cryptoTailLen)%16) % 16)
 	newLength := length + uint(paddingLength) + cryptoTailLen
+	currentPacket.GetIPv4NoCheck().TotalLength = packet.SwapBytesUint16(uint16(newLength) - etherLen)
 	currentPacket.EncapsulateTail(length, uint(paddingLength)+cryptoTailLen)
 
 	currentCryptoHeader := (*cryptHeader)(currentPacket.StartAtOffset(etherLen + outerIPLen))
@@ -65,10 +67,12 @@ func encrypt(currentPacket *packet.Packet, context0 flow.UserContext) bool {
 	AuthPart := (*[types.MaxLength]byte)(currentPacket.StartAtOffset(0))[etherLen+outerIPLen : newLength-authLen]
 	context.mac123.Write(AuthPart)
 	copy(currentESPTail.Auth[:], context.mac123.Sum(nil))
+	fmt.Println("Encrypt packet result", currentPacket.GetRawPacketBytes())
 	return true
 }
 
 func decrypt(currentPacket *packet.Packet, context flow.UserContext) bool {
+	fmt.Println("Decrypt packet input", currentPacket.GetRawPacketBytes())
 	length := currentPacket.GetPacketLen()
 	currentESPHeader := (*cryptHeader)(currentPacket.StartAtOffset(etherLen + outerIPLen))
 	currentESPTail := (*cryptoTail)(unsafe.Pointer(currentPacket.StartAtOffset(uintptr(length) - cryptoTailLen)))
@@ -89,10 +93,10 @@ func decrypt(currentPacket *packet.Packet, context flow.UserContext) bool {
 		fmt.Println("Decapsulate error")
 		return false
 	}
-	fmt.Println("Result", encryptionPart)
 	// Decapsulate
 	currentPacket.DecapsulateHead(etherLen, outerIPLen+cryptoHeadLen)
 	currentPacket.DecapsulateTail(length-cryptoTailLen-uint(currentESPTail.paddingLen), uint(currentESPTail.paddingLen)+cryptoTailLen)
+	fmt.Println("Decrypt packet result", currentPacket.GetRawPacketBytes())
 	return true
 }
 
