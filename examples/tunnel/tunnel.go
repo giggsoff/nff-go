@@ -21,7 +21,7 @@ func main() {
 		CPUList:          *cores,
 		DPDKArgs:         []string{*dpdkLogLevel},
 		DisableScheduler: *noscheduler,
-		ChainedJumbo:     *reassembly,
+		MemoryJumbo:      *reassembly,
 	}
 
 	flow.CheckFatal(flow.SystemInit(&nffgoconfig))

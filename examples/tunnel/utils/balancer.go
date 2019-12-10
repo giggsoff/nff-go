@@ -37,6 +37,10 @@ type cryptoTail struct {
 const maxPacketSegment = 1484
 
 func encrypt(currentPacket *packet.Packet, context0 flow.UserContext) bool {
+	context := (context0).(*SContext)
+
+	//context.setCipherKey([]byte("AES128Key-16Char"), true)
+
 	currentPacket.ParseL3()
 	dstMac, found := LBConfig.TunnelPort.neighCache.LookupMACForIPv4(LBConfig.TunnelPort.Subnet.IPv4.Addr)
 	if !found {
@@ -66,7 +70,6 @@ func encrypt(currentPacket *packet.Packet, context0 flow.UserContext) bool {
 	ipv4.DstAddr = LBConfig.TunnelPort.Subnet.IPv4.Addr
 	ipv4.VersionIhl = 0x45
 	ipv4.NextProtoID = esp
-	context := (context0).(*SContext)
 	length := currentPacket.GetPacketLen()
 	paddingLength := uint8((16 - (length-(etherLen+outerIPLen+cryptoHeadLen)-cryptoTailLen)%16) % 16)
 	newLength := length + uint(paddingLength) + cryptoTailLen
@@ -76,7 +79,8 @@ func encrypt(currentPacket *packet.Packet, context0 flow.UserContext) bool {
 
 	currentCryptoHeader := (*cryptHeader)(currentPacket.StartAtOffset(etherLen + outerIPLen))
 	currentCryptoHeader.SPI = packet.SwapBytesUint32(mode1234)
-	currentCryptoHeader.IV = [16]byte{0x90, 0x9d, 0x78, 0xa8, 0x72, 0x70, 0x68, 0x00, 0x8f, 0xdc, 0x55, 0x73, 0xa3, 0x75, 0xb5, 0xa7}
+	nonce := make([]byte, 12)
+	copy(currentCryptoHeader.IV[:], nonce)
 	//fmt.Println("currentESPHeader", currentCryptoHeader)
 
 	currentESPTail := (*cryptoTail)(currentPacket.StartAtOffset(uintptr(newLength) - cryptoTailLen))
@@ -95,9 +99,9 @@ func encrypt(currentPacket *packet.Packet, context0 flow.UserContext) bool {
 	}
 	// Encryption
 	EncryptionPart := (*[types.MaxLength]byte)(currentPacket.StartAtOffset(0))[etherLen+outerIPLen+cryptoHeadLen : newLength-authLen]
-	context.modeEnc.(SetIVer).SetIV(currentCryptoHeader.IV[:])
-	context.modeEnc.CryptBlocks(EncryptionPart, EncryptionPart)
-
+	//context.modeEnc.(SetIVer).SetIV(currentCryptoHeader.IV[:])
+	//context.modeEnc.CryptBlocks(EncryptionPart, EncryptionPart)
+	EncryptionPart = (*context.aesGCMEnc).Seal(nil, nonce, EncryptionPart, nil)
 	// Authentication
 	context.mac123.Reset()
 	AuthPart := (*[types.MaxLength]byte)(currentPacket.StartAtOffset(0))[etherLen+outerIPLen : newLength-authLen]
@@ -168,6 +172,8 @@ func decrypt(currentPacket *packet.Packet, context flow.UserContext) bool {
 func decapsulationSPI123(currentAuth []byte, Auth [authLen]byte, iv [16]byte, ciphertext []byte, context0 flow.UserContext) bool {
 	context := (context0).(*SContext)
 
+	//context.setCipherKey([]byte("AES128Key-16Char"), true)
+
 	context.mac123.Reset()
 	context.mac123.Write(currentAuth)
 	if bytes.Equal(context.mac123.Sum(nil)[0:12], Auth[:]) == false {
@@ -180,7 +186,9 @@ func decapsulationSPI123(currentAuth []byte, Auth [authLen]byte, iv [16]byte, ci
 		fmt.Println("Decapsulate error check BlockSize")
 		return false
 	}
-	context.modeDec.(SetIVer).SetIV(iv[:])
-	context.modeDec.CryptBlocks(ciphertext, ciphertext)
+	//context.modeDec.(SetIVer).SetIV(iv[:])
+	//context.modeDec.CryptBlocks(ciphertext, ciphertext)
+	nonce := iv[:12]
+	ciphertext, _ = (*context.aesGCMDec).Open(nil, nonce, ciphertext, nil)
 	return true
 }
