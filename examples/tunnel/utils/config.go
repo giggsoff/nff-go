@@ -19,7 +19,8 @@ type NetworkSubnet struct {
 }
 
 type IpPort struct {
-	Index      uint16 `json:"index"`
+	Index      uint16        `json:"index"`
+	Subnet     NetworkSubnet `json:"subnet"`
 	neighCache *packet.NeighboursLookupTable
 	macAddress types.MACAddress
 }
@@ -57,11 +58,11 @@ func InitFlows() {
 	flow.CheckFatal(flow.SetHandlerDrop(ioFlow, decrypt, SContext{}))
 	flow.CheckFatal(flow.SetSender(ioFlow, LBConfig.InputPort.Index))
 
-	//LBConfig.InputPort.initPort()
-	//LBConfig.TunnelPort.initPort()
+	LBConfig.InputPort.initPort()
+	LBConfig.TunnelPort.initTunnelPort()
 }
 
-/*func (port *IpPort) initPort() {
+func (port *IpPort) initPort() {
 	port.macAddress = flow.GetPortMACAddress(port.Index)
 	port.neighCache = packet.NewNeighbourTable(port.Index, port.macAddress,
 		func(ipv4 types.IPv4Address) bool {
@@ -70,4 +71,15 @@ func InitFlows() {
 		func(ipv6 types.IPv6Address) bool {
 			return LBConfig.TunnelSubnet.IPv6.CheckIPv6AddressWithinSubnet(ipv6)
 		})
-}*/
+}
+
+func (port *IpPort) initTunnelPort() {
+	port.macAddress = flow.GetPortMACAddress(port.Index)
+	port.neighCache = packet.NewNeighbourTable(port.Index, port.macAddress,
+		func(ipv4 types.IPv4Address) bool {
+			return ipv4 == LBConfig.InputPort.Subnet.IPv4.Addr
+		},
+		func(ipv6 types.IPv6Address) bool {
+			return ipv6 == LBConfig.InputPort.Subnet.IPv6.Addr
+		})
+}
