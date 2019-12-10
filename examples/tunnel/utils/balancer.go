@@ -98,6 +98,8 @@ func encrypt(currentPacket *packet.Packet, context0 flow.UserContext) bool {
 	AuthPart := (*[types.MaxLength]byte)(currentPacket.StartAtOffset(0))[etherLen+outerIPLen : newLength-authLen]
 	context.mac123.Write(AuthPart)
 	copy(currentESPTail.Auth[:], context.mac123.Sum(nil))
+	currentPacket.ParseL3()
+	ipv4.HdrChecksum = packet.SwapBytesUint16(packet.CalculateIPv4Checksum(currentPacket.GetIPv4NoCheck()))
 	fmt.Println("currentESPTail", currentESPTail)
 	fmt.Println(fmt.Sprintf("Encrypt packet result [% x]", currentPacket.GetRawPacketBytes()))
 	return true
@@ -150,6 +152,7 @@ func decrypt(currentPacket *packet.Packet, context flow.UserContext) bool {
 	case 2:
 		currentPacket.Ether.EtherType = types.SwapARPNumber
 	}
+	ipv4.HdrChecksum = packet.SwapBytesUint16(packet.CalculateIPv4Checksum(currentPacket.GetIPv4NoCheck()))
 	fmt.Println(fmt.Sprintf("Decrypt packet result [% x]", currentPacket.GetRawPacketBytes()))
 	return true
 }

@@ -18,7 +18,7 @@ bindports ()
 # Bind ports to Linux kernel driver
 unbindports ()
 {
-    sudo "$NFF_GO"/dpdk/dpdk/usertools/dpdk-devbind.py --bind=e1000 $NFF_GO_CARDS
+    sudo "$NFF_GO"/dpdk/dpdk/usertools/dpdk-devbind.py --bind=virtio-pci $NFF_GO_CARDS
 }
 
 # Run pktgen
